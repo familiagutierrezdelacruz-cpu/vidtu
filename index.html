@@ -223,7 +223,8 @@ nav.tabs .plus:active{transform:scale(.92)}
 <div class="back" id="back"></div>
 <div class="sheet glass" id="sheet"></div>
 <div class="toast" id="toast"></div>
-<input type="file" id="file" accept="video/*,.mkv,.mov,.mp4,.m4v,.webm,.3gp,.avi" multiple hidden>
+<input type="file" id="file" accept="video/*" multiple hidden>
+<input type="file" id="file2" accept=".mp4,.m4v,.mov,.mkv,.webm,.3gp,.avi" multiple hidden>
 
 <script>
 'use strict';
@@ -432,12 +433,12 @@ function sheetSpeed(){
  openSheet(`<h2>Velocidad</h2>`+o.map(s=>`<button class="opt ${vid.playbackRate===s?'sel':''}" data-act="setspeed" data-s="${s}"><span>${vid.playbackRate===s?'●':'○'}</span><span>${s===1?'Normal':s+'×'}</span></button>`).join(''));
 }
 function sheetImport(){
- openSheet(`<h2>Importar videos</h2><input class="fld" id="fold" list="foldl" placeholder="Carpeta (opcional), p. ej. Capacitación" maxlength="40"><datalist id="foldl">${folders().map(f=>`<option value="${esc(f)}">`).join('')}</datalist><div class="drop"><div class="ico" style="display:grid;place-items:center;color:var(--acc)">${ic('film').replace('class="i "','class="i " style="width:44px;height:44px"')}</div><p>Elige uno o varios videos de tu teléfono. Se guardan dentro de la app.</p><button class="btn" data-act="pick">${ic('plus')} Elegir videos</button></div><div class="prog" id="prog"></div>`);
+ openSheet(`<h2>Importar videos</h2><input class="fld" id="fold" list="foldl" placeholder="Carpeta (opcional), p. ej. Capacitación" maxlength="40"><datalist id="foldl">${folders().map(f=>`<option value="${esc(f)}">`).join('')}</datalist><div class="drop"><div class="ico" style="display:grid;place-items:center;color:var(--acc)">${ic('film').replace('class="i "','class="i " style="width:44px;height:44px"')}</div><p>Elige uno o varios videos de tu teléfono. Se guardan dentro de la app.</p><button class="btn" data-act="pick2">${ic('folder')} Desde Archivos (conserva el nombre)</button><button class="btn ghost" style="margin-top:10px" data-act="pick">${ic('film')} Desde la galería</button></div><div class="prog" id="prog"></div>`);
 }
 function sheetConfirm(text,act,label='Eliminar'){openSheet(`<h2>${text}</h2><p style="color:var(--mute);margin:0 0 16px">Esta acción no se puede deshacer.</p><div style="display:flex;gap:10px"><button class="btn ghost" style="flex:1" data-act="closesheet">Cancelar</button><button class="btn danger" style="flex:1" data-act="${act}">${label}</button></div>`)}
 
 /* ---------- importación ---------- */
-const fileIn=$('#file');
+const fileIn=$('#file'),fileIn2=$('#file2');
 async function makeMeta(file){
  return new Promise(res=>{
   const url=URL.createObjectURL(file);const v=document.createElement('video');
@@ -468,10 +469,12 @@ async function importFiles(files){
    await dbPut('videos',rec);S.videos.push(rec);ok++;
   }catch(e){console.error(e);fail++;if(e&&e.name==='QuotaExceededError'){toast('Sin espacio en el teléfono');break}}
  }
+ const num=S.videos.filter(v=>/^\d+$/.test(v.title)).length;
+ if(num)toast('Hay '+num+' con nombre numérico: ⋮ → Cambiar nombre, o impórtalos “Desde Archivos”');
  prog.innerHTML=`<div class="pb"><b style="width:100%"></b></div><small>Listo: ${ok} importados${dup?` · ${dup} repetidos`:''}${fail?` · ${fail} con error`:''}</small>`;
  render();setTimeout(closeSheet,1100);
 }
-fileIn.addEventListener('change',()=>{if(fileIn.files.length)importFiles(fileIn.files);fileIn.value=''});
+[fileIn,fileIn2].forEach(f=>f.addEventListener('change',()=>{if(f.files.length)importFiles(f.files);f.value=''}));
 
 /* ---------- reproductor ---------- */
 const vid=$('#vid'),player=$('#player'),ctl=$('#ctl'),seek=$('#seek');
@@ -528,6 +531,7 @@ function setMedia(v){
  h('play',()=>vid.play());h('pause',()=>vid.pause());h('previoustrack',prev);h('nexttrack',next);
  h('seekbackward',()=>vid.currentTime-=SKIP());h('seekforward',()=>vid.currentTime+=SKIP());
  h('seekto',e=>{vid.currentTime=e.seekTime})}catch{}
+ try{navigator.mediaSession.setActionHandler('enterpictureinpicture',()=>enterPip())}catch{}
 }
 function next(){const i=P.queue.indexOf(P.id);const n=P.queue[i+1];if(n)openVideo(n);else{toast('No hay más videos en la cola')}}
 function prev(){if(vid.currentTime>3){vid.currentTime=0;return}const i=P.queue.indexOf(P.id);const p=P.queue[i-1];if(p)openVideo(p);else vid.currentTime=0}
@@ -592,8 +596,16 @@ document.addEventListener('keydown',e=>{
  else if(e.key==='ArrowRight')vid.currentTime+=SKIP();else if(e.key==='ArrowLeft')vid.currentTime-=SKIP();
  else if(e.key==='f')$('#bFs').onclick();else if(e.key==='Escape'&&!document.fullscreenElement)minimize();
 });
+async function enterPip(){
+ if(!document.pictureInPictureEnabled||!vid.src||vid.paused||document.pictureInPictureElement)return;
+ try{await vid.requestPictureInPicture()}catch{}
+}
+vid.addEventListener('enterpictureinpicture',()=>{ctl.classList.remove('on')});
+vid.addEventListener('leavepictureinpicture',()=>{if(P.id&&!document.hidden)showCtl()});
+try{vid.autoPictureInPicture=true}catch{}
+vid.setAttribute('autopictureinpicture','');
 addEventListener('pagehide',persistPos);
-document.addEventListener('visibilitychange',()=>{if(document.hidden)persistPos()});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){persistPos();enterPip()}});
 
 /* ---------- acciones ---------- */
 async function saveVideo(v){await dbPut('videos',v)}
@@ -611,6 +623,7 @@ document.addEventListener('click',async e=>{
   case'tab':S.tab=t.dataset.t;S.sub=null;render();scrollTo(0,0);break;
   case'import':sheetImport();break;
   case'pick':fileIn.click();break;
+  case'pick2':fileIn2.click();break;
   case'chip':S.filter=t.dataset.k;render();break;
   case'sheet-sort':sheetSort();break;
   case'dosort':S.sort=t.dataset.k;LS.set('sort',S.sort);closeSheet();render();break;
