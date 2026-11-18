@@ -49,6 +49,7 @@ h2.sec small{font:500 13px 'Public Sans';color:var(--mute)}
 .card{border-radius:22px;overflow:hidden;animation:rise .5s both;animation-delay:calc(var(--i,0)*45ms);cursor:pointer}
 .th{position:relative;aspect-ratio:16/9;background:linear-gradient(135deg,#2b2447,#4b2a5c);overflow:hidden}
 .th img{width:100%;height:100%;object-fit:cover;display:block}
+.th img.v{object-fit:contain;background:#000}
 .ph{width:100%;height:100%;display:grid;place-items:center;font:800 54px 'Bricolage Grotesque';color:rgba(255,255,255,.55)}
 .dur{position:absolute;right:8px;bottom:10px;background:rgba(0,0,0,.72);color:#fff;font-size:12px;font-weight:600;padding:2px 7px;border-radius:7px}
 .bar{position:absolute;left:0;right:0;bottom:0;height:4px;background:rgba(255,255,255,.35)}
@@ -172,6 +173,16 @@ nav.tabs .plus:active{transform:scale(.92)}
 .player.mini .minibar{display:flex}
 .player.mini #pv:fullscreen{width:100%;height:100%}
 #pv:fullscreen{max-height:none;width:100vw;height:100vh}
+.player.vertical.full #pv{aspect-ratio:auto;height:68vh;max-height:none}
+.fcard{display:flex;gap:12px;margin-bottom:14px;padding:12px;border-radius:18px;background:rgba(128,120,160,.1)}
+.fcard .ft{width:92px;flex:none}.fcard .ft .th{border-radius:12px}
+.fcard .ft .th.vt{aspect-ratio:9/16}
+.fcard .fb{flex:1;min-width:0}.fcard .fld{margin-bottom:8px;padding:11px 13px;font-size:15px}
+.fcard textarea.fld{resize:none;font-family:inherit}
+.small{font-size:12.5px;color:var(--mute)}
+input[type=range].fr{width:100%;accent-color:var(--accb);margin:4px 0 2px}
+.mini2{padding:7px 12px;border-radius:99px;font-weight:600;font-size:12.5px;background:rgba(128,120,160,.2);margin-top:6px;display:inline-block}
+.chk{display:flex;align-items:center;gap:10px;padding:8px 2px;font-weight:500}.chk input{width:20px;height:20px;accent-color:var(--accb)}
 @media (orientation:landscape) and (max-height:520px){
  .player.full{flex-direction:row}
  .player.full #pv{width:62%;max-height:none;aspect-ratio:auto;height:100vh}
@@ -224,6 +235,7 @@ nav.tabs .plus:active{transform:scale(.92)}
 <div class="sheet glass" id="sheet"></div>
 <div class="toast" id="toast"></div>
 <input type="file" id="file" accept="video/*" multiple hidden>
+<input type="file" id="file3" accept="image/*" hidden>
 <input type="file" id="file2" accept=".mp4,.m4v,.mov,.mkv,.webm,.3gp,.avi" multiple hidden>
 
 <script>
@@ -259,7 +271,8 @@ const ICON={
  film:'<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M10 9l5 3-5 3z" fill="currentColor"/>',
  chev:'<path d="M9 6l6 6-6 6"/>',
  pip:'<rect x="3" y="5" width="18" height="14" rx="2"/><rect x="12" y="11" width="6" height="5" rx="1" fill="currentColor"/>',
- up:'<path d="M6 15l6-6 6 6"/>'
+ up:'<path d="M6 15l6-6 6 6"/>',
+ dl:'<path d="M12 4v11M7 11l5 5 5-5M5 20h14"/>'
 };
 const ic=(n,c='')=>`<svg class="i ${c}" viewBox="0 0 24 24" aria-hidden="true">${ICON[n]||''}</svg>`;
 function hydrateIcons(root=document){root.querySelectorAll('[data-i]').forEach(e=>{if(!e.dataset.done||e.dataset.done!==e.dataset.i){e.innerHTML=ic(e.dataset.i);e.style.display='contents';e.dataset.done=e.dataset.i}})}
@@ -310,7 +323,8 @@ function filtered(){
 
 /* ---------- tarjetas ---------- */
 const ringSvg=(p,size=34)=>{const r=size/2-3.2,c=2*Math.PI*r;return`<svg viewBox="0 0 ${size} ${size}"><circle class="t" cx="${size/2}" cy="${size/2}" r="${r}"/><circle class="p" cx="${size/2}" cy="${size/2}" r="${r}" stroke-dasharray="${c}" stroke-dashoffset="${c*(1-p/100)}"/></svg>`};
-const thumb=v=>v.thumb?`<img src="${v.thumb}" alt="" loading="lazy">`:`<div class="ph">${esc((v.title[0]||'▶').toUpperCase())}</div>`;
+const isVert=v=>!!(v.w&&v.h&&v.h>v.w);
+const thumb=v=>v.thumb?`<img class="${isVert(v)?'v':''}" src="${v.thumb}" alt="" loading="lazy">`:`<div class="ph">${esc((v.title[0]||'▶').toUpperCase())}</div>`;
 function card(v,i=0){
  const p=pct(v);
  return`<article class="card glass" data-act="play" data-id="${v.id}" style="--i:${Math.min(i,12)}">
@@ -359,7 +373,7 @@ function vSearch(){
  const run=()=>{
   const q=S.q.trim().toLowerCase();const r=$('#res');
   if(!S.videos.length){r.innerHTML=emptyHtml();return}
-  const list=sorted(S.videos).filter(v=>!q||v.title.toLowerCase().includes(q));S.ctx=list.map(v=>v.id);
+  const list=sorted(S.videos).filter(v=>!q||v.title.toLowerCase().includes(q)||(v.desc||'').toLowerCase().includes(q)||(v.folder||'').toLowerCase().includes(q));S.ctx=list.map(v=>v.id);
   r.innerHTML=list.length?`<div class="grid">${list.map(card).join('')}</div>`:`<div class="empty"><p>Sin resultados para “${esc(S.q)}”.</p></div>`;hydrateIcons(r);
  };
  $('#q').addEventListener('input',e=>{S.q=e.target.value;run()});run();
@@ -374,7 +388,8 @@ function vSub(){
  const name=fold!==null?fold:id==='fav'?'Favoritos':id==='later'?'Ver más tarde':id==='hist'?'Historial':custom?.name||'Lista';
  let list=fold!==null?sorted(S.videos.filter(v=>v.folder===fold)):id==='fav'?S.videos.filter(v=>v.fav):id==='later'?S.videos.filter(v=>v.later):id==='hist'?S.videos.filter(v=>v.last).sort((a,b)=>b.last-a.last):(custom?custom.ids.map(byId).filter(Boolean):[]);
  S.ctx=list.map(v=>v.id);
- const extra=fold!==null?`<button class="ib glass" data-act="renfolder" aria-label="Renombrar carpeta">${ic('edit')}</button><button class="ib glass" data-act="delfolder" aria-label="Deshacer carpeta">${ic('trash')}</button>`:custom?`<button class="ib glass" data-act="dellist" data-id="${id}" aria-label="Eliminar lista">${ic('trash')}</button>`:'';
+ const dlb=`<button class="ib glass" data-act="dlgroup" aria-label="Descargar">${ic('dl')}</button>`;
+ const extra=fold!==null?dlb+`<button class="ib glass" data-act="renfolder" aria-label="Renombrar carpeta">${ic('edit')}</button><button class="ib glass" data-act="delfolder" aria-label="Deshacer carpeta">${ic('trash')}</button>`:custom?dlb+`<button class="ib glass" data-act="dellist" data-id="${id}" aria-label="Eliminar lista">${ic('trash')}</button>`:'';
  view.innerHTML=`<header class="top"><button class="ib glass" data-act="back" aria-label="Volver">${ic('prev')}</button><h1>${esc(name)}</h1>${extra}</header><main>`+
  (list.length?`<div class="pair"><button class="btn" data-act="playall">${ic('play','f')} Reproducir todo</button>${(custom||id==='later')?`<button class="btn ghost" data-act="clearseen">Quitar vistos</button>`:''}</div><div class="grid">${list.map(card).join('')}</div>`:`<div class="empty"><p>Aquí aún no hay videos.</p></div>`)+'</main>';
 }
@@ -397,7 +412,10 @@ async function vYou(){
 /* ---------- hojas inferiores ---------- */
 const sheet=$('#sheet'),back=$('#back');
 function openSheet(html){sheet.innerHTML=`<div class="grab"></div>`+html;hydrateIcons(sheet);back.classList.add('on');requestAnimationFrame(()=>sheet.classList.add('on'))}
-function closeSheet(){sheet.classList.remove('on');back.classList.remove('on')}
+let namesRes=null;
+let SRC={};
+function cleanSrc(){for(const k in SRC){try{URL.revokeObjectURL(SRC[k].url)}catch{}}SRC={}}
+function closeSheet(){cleanSrc();sheet.classList.remove('on');back.classList.remove('on');if(namesRes){const r=namesRes;namesRes=null;r(null)}}
 back.addEventListener('click',closeSheet);
 const opt=(act,icn,label,extra='',cls='')=>`<button class="opt ${cls}" data-act="${act}" ${extra}>${ic(icn)}<span>${label}</span></button>`;
 
@@ -412,10 +430,11 @@ function sheetMenu(id){
   opt('fav','heart',v.fav?'Quitar de favoritos':'Agregar a favoritos',`data-id="${id}"`)+
   opt('later','clock',v.later?'Quitar de ver más tarde':'Ver más tarde',`data-id="${id}"`)+
   opt('movef','folder',byId(id).folder?'Cambiar de carpeta':'Mover a carpeta',`data-id="${id}"`)+
+  opt('dl','dl','Descargar video',`data-id="${id}"`)+
   opt('queue','next','Reproducir a continuación',`data-id="${id}"`)+
   opt('addlist','save','Guardar en una lista',`data-id="${id}"`)+
   (S.sub&&S.lists.some(l=>l.id===S.sub)?opt('lup','up','Subir en la lista',`data-id="${id}"`)+opt('ldown','down','Bajar en la lista',`data-id="${id}"`)+opt('lrem','x','Quitar de esta lista',`data-id="${id}"`):'')+
-  opt('rename','edit','Cambiar nombre',`data-id="${id}"`)+
+  opt('rename','edit','Editar título, foto y descripción',`data-id="${id}"`)+
   opt('del','trash','Eliminar de la biblioteca',`data-id="${id}"`,'red'));
 }
 function sheetAddList(id){
@@ -427,53 +446,165 @@ function sheetMove(id){
  const v=byId(id);
  openSheet(`<h2>Mover a carpeta</h2>`+folders().map(f=>`<button class="opt ${v.folder===f?'sel':''}" data-act="setfolder" data-id="${id}" data-f="${esc(f)}"><span>${v.folder===f?'●':'○'}</span><span>${esc(f)}</span></button>`).join('')+(v.folder?`<button class="opt" data-act="setfolder" data-id="${id}" data-f=""><span>○</span><span>Sin carpeta</span></button>`:'')+`<input class="fld" id="nf" placeholder="Nueva carpeta" maxlength="40" style="margin-top:10px"><button class="btn" style="width:100%" data-act="newfolder" data-id="${id}">Crear y mover</button>`);
 }
-function sheetRename(id){const v=byId(id);openSheet(`<h2>Cambiar nombre</h2><input class="fld" id="rn" value="${esc(v.title)}" maxlength="120"><button class="btn" style="width:100%" data-act="dorename" data-id="${id}">Guardar</button>`)}
+function sheetRename(id){const v=byId(id);editThumb=null;openSheet(`<h2>Editar video</h2><div class="fcard"><div class="ft"><div class="th ${isVert(v)?'vt':''}" id="et">${thumb(v)}</div><button class="mini2" data-act="efoto">Cambiar foto</button></div><div class="fb"><input class="fld" id="rn" value="${esc(v.title)}" maxlength="120" placeholder="Título"><textarea class="fld" id="rd" rows="3" maxlength="300" placeholder="Descripción (opcional)">${esc(v.desc||'')}</textarea><div class="small">Elegir otro momento del video</div><input type="range" class="fr" data-k="edit" data-id="${id}" min="0" max="100" value="10"></div></div><button class="btn" style="width:100%" data-act="dorename" data-id="${id}">Guardar</button>`)}
 function sheetSpeed(){
  const o=[.5,.75,1,1.25,1.5,1.75,2];
  openSheet(`<h2>Velocidad</h2>`+o.map(s=>`<button class="opt ${vid.playbackRate===s?'sel':''}" data-act="setspeed" data-s="${s}"><span>${vid.playbackRate===s?'●':'○'}</span><span>${s===1?'Normal':s+'×'}</span></button>`).join(''));
 }
 function sheetImport(){
- openSheet(`<h2>Importar videos</h2><input class="fld" id="fold" list="foldl" placeholder="Carpeta (opcional), p. ej. Capacitación" maxlength="40"><datalist id="foldl">${folders().map(f=>`<option value="${esc(f)}">`).join('')}</datalist><div class="drop"><div class="ico" style="display:grid;place-items:center;color:var(--acc)">${ic('film').replace('class="i "','class="i " style="width:44px;height:44px"')}</div><p>Elige uno o varios videos de tu teléfono. Se guardan dentro de la app.</p><button class="btn" data-act="pick2">${ic('folder')} Desde Archivos (conserva el nombre)</button><button class="btn ghost" style="margin-top:10px" data-act="pick">${ic('film')} Desde la galería</button></div><div class="prog" id="prog"></div>`);
+ openSheet(`<h2>Importar videos</h2><div class="drop"><div class="ico" style="display:grid;place-items:center;color:var(--acc)">${ic('film').replace('class="i "','class="i " style="width:44px;height:44px"')}</div><p>Elige uno o varios videos de tu teléfono. Se guardan dentro de la app.</p><button class="btn" data-act="pick2">${ic('folder')} Desde Archivos (conserva el nombre)</button><button class="btn ghost" style="margin-top:10px" data-act="pick">${ic('film')} Desde la galería</button></div><div class="prog" id="prog"></div>`);
 }
 function sheetConfirm(text,act,label='Eliminar'){openSheet(`<h2>${text}</h2><p style="color:var(--mute);margin:0 0 16px">Esta acción no se puede deshacer.</p><div style="display:flex;gap:10px"><button class="btn ghost" style="flex:1" data-act="closesheet">Cancelar</button><button class="btn danger" style="flex:1" data-act="${act}">${label}</button></div>`)}
 
 /* ---------- importación ---------- */
 const fileIn=$('#file'),fileIn2=$('#file2');
+async function frameSrc(blob){
+ const url=URL.createObjectURL(blob),el=document.createElement('video');
+ el.muted=true;el.playsInline=true;el.preload='auto';el.src=url;
+ await new Promise((res,rej)=>{el.onloadedmetadata=res;el.onerror=rej});
+ return{el,url};
+}
+async function grabFrame(src,frac){
+ const el=src.el,d=isFinite(el.duration)?el.duration:0;
+ el.currentTime=Math.min(Math.max(d*frac,.1),Math.max(d-.1,0));
+ await new Promise(r=>{el.onseeked=r});
+ const w=el.videoWidth||320,h=el.videoHeight||180,k=320/Math.max(w,h),c=document.createElement('canvas');
+ c.width=Math.round(w*k);c.height=Math.round(h*k);c.getContext('2d').drawImage(el,0,0,c.width,c.height);
+ return c.toDataURL('image/jpeg',.75);
+}
+let frBusy=false,frNext=null,list_files_cache=[];
+async function onSlider(inp){
+ if(frBusy){frNext=inp;return}
+ frBusy=true;
+ try{
+  const key=inp.dataset.k;
+  if(!SRC[key]){
+   const blob=key==='edit'?(await dbGet('blobs',inp.dataset.id))?.blob:list_files_cache[+key];
+   if(!blob){frBusy=false;return}
+   SRC[key]=await frameSrc(blob);
+  }
+  const d=await grabFrame(SRC[key],inp.value/100);
+  if(key==='edit'){editThumb=d;const e=$('#et img');if(e){e.src=d}else{const b=$('#et');if(b)b.innerHTML=`<img src="${d}" alt="">`}}
+  else{IM.thumbs[+key]=d;const e=$('#ft'+key+' img');if(e)e.src=d}
+ }catch{toast('No se pudo leer ese momento')}
+ frBusy=false;
+ if(frNext){const n=frNext;frNext=null;onSlider(n)}
+}
+document.addEventListener('input',e=>{const t=e.target;if(t.classList&&t.classList.contains('fr'))onSlider(t)});
 async function makeMeta(file){
  return new Promise(res=>{
   const url=URL.createObjectURL(file);const v=document.createElement('video');
   v.muted=true;v.playsInline=true;v.preload='metadata';v.src=url;
   let done=false;const fin=(o)=>{if(done)return;done=true;URL.revokeObjectURL(url);res(o)};
-  const to=setTimeout(()=>fin({duration:0,thumb:null}),9000);
-  v.onerror=()=>{clearTimeout(to);fin({duration:0,thumb:null})};
+  const to=setTimeout(()=>fin({duration:0,thumb:null,w:0,h:0}),9000);
+  v.onerror=()=>{clearTimeout(to);fin({duration:0,thumb:null,w:0,h:0})};
   v.onloadedmetadata=()=>{const d=isFinite(v.duration)?v.duration:0;v.currentTime=Math.min(Math.max(d*.1,1),Math.max(d-.1,0));
-   v.onseeked=()=>{try{const c=document.createElement('canvas');c.width=320;c.height=180;const x=c.getContext('2d');
-    const w=v.videoWidth||320,h=v.videoHeight||180,s=Math.max(320/w,180/h),dw=w*s,dh=h*s;x.drawImage(v,(320-dw)/2,(180-dh)/2,dw,dh);
-    clearTimeout(to);fin({duration:d,thumb:c.toDataURL('image/jpeg',.72)})}catch{clearTimeout(to);fin({duration:d,thumb:null})}}};
+   v.onseeked=()=>{const w=v.videoWidth||320,h=v.videoHeight||180;try{const k=320/Math.max(w,h),c=document.createElement('canvas');c.width=Math.round(w*k);c.height=Math.round(h*k);c.getContext('2d').drawImage(v,0,0,c.width,c.height);
+    clearTimeout(to);fin({duration:d,thumb:c.toDataURL('image/jpeg',.72),w,h})}catch{clearTimeout(to);fin({duration:d,thumb:null,w,h})}}};
  });
 }
+const metaCache=new Map();
+const isNum=f=>/^\d+$/.test(f.name.replace(/\.[^.]+$/,''));
+const baseTitle=f=>f.name.replace(/\.[^.]+$/,'').replace(/[_]+/g,' ').trim()||f.name;
+let IM={thumbs:[],metas:[]};
+async function imgToThumb(file){
+ return new Promise((res,rej)=>{const u=URL.createObjectURL(file),i=new Image();
+  i.onload=()=>{const k=Math.min(1,640/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=Math.round(i.width*k);c.height=Math.round(i.height*k);c.getContext('2d').drawImage(i,0,0,c.width,c.height);URL.revokeObjectURL(u);res(c.toDataURL('image/jpeg',.82))};
+  i.onerror=()=>{URL.revokeObjectURL(u);rej()};i.src=u});
+}
+async function askForm(list){
+ openSheet('<h2>Nuevo video</h2><p class="small" id="prep">Preparando miniaturas…</p>');
+ IM={thumbs:[],metas:[]};list_files_cache=list;
+ for(const f of list){const m=metaCache.get(f)||await makeMeta(f);metaCache.set(f,m);IM.metas.push(m);IM.thumbs.push(m.thumb)}
+ const cards=list.map((f,i)=>{const m=IM.metas[i],vt=m.h>m.w&&m.w>0;
+  return `<div class="fcard"><div class="ft"><div class="th ${vt?'vt':''}" id="ft${i}">${m.thumb?`<img class="${vt?'v':''}" src="${m.thumb}" alt="">`:'<div class="ph">▶</div>'}<span class="dur">${fmt(m.duration)}</span></div><button class="mini2" data-act="foto" data-i="${i}">Cambiar foto</button></div>
+  <div class="fb"><input class="fld nm" maxlength="120" placeholder="Título del video" value="${isNum(f)?'':esc(baseTitle(f))}"><textarea class="fld ds" rows="2" maxlength="300" placeholder="Descripción (opcional)"></textarea><div class="small">${vt?'Vertical':'Horizontal'} · ${fsize(f.size)}</div><div class="small" style="margin-top:6px">Momento de la miniatura</div><input type="range" class="fr" data-k="${i}" min="0" max="100" value="10" aria-label="Momento de la miniatura"></div></div>`}).join('');
+ const lt=S.lists.map(l=>`<option value="${esc(l.name)}">`).join('');
+ openSheet(`<h2>${list.length===1?'Nuevo video':list.length+' videos nuevos'}</h2>${cards}
+ <input class="fld" id="fold" list="foldl" placeholder="Carpeta (opcional)" maxlength="40"><datalist id="foldl">${folders().map(f=>`<option value="${esc(f)}">`).join('')}</datalist>
+ <input class="fld" id="fl2" list="fll" placeholder="Agregar a una lista (opcional)" maxlength="40"><datalist id="fll">${lt}</datalist>
+ <label class="chk"><input type="checkbox" id="cfav"> Marcar como favorito</label>
+ <label class="chk"><input type="checkbox" id="clat"> Ver más tarde</label>
+ <div style="display:flex;gap:10px;margin-top:10px"><button class="btn ghost" style="flex:1" data-act="closesheet">Cancelar</button><button class="btn" style="flex:1" data-act="importgo">Importar</button></div>`);
+ return new Promise(res=>{namesRes=res});
+}
+function readForm(n){
+ const q=sel=>[...document.querySelectorAll('#sheet '+sel)];
+ return{items:Array.from({length:n},(_,i)=>({title:q('.nm')[i]?.value.trim()||'',desc:q('.ds')[i]?.value.trim()||'',thumb:IM.thumbs[i]})),
+  folder:($('#fold')?.value||'').trim().slice(0,40),list:($('#fl2')?.value||'').trim().slice(0,40),fav:$('#cfav')?.checked||false,later:$('#clat')?.checked||false};
+}
 async function importFiles(files){
- const folder=($('#fold')?.value||'').trim().slice(0,40);
  const list=[...files].filter(f=>f.type.startsWith('video/')||/\.(mp4|m4v|mov|mkv|webm|3gp|avi)$/i.test(f.name));
  if(!list.length){toast('No se eligieron videos');return}
  try{await navigator.storage?.persist?.()}catch{}
- sheetImport();const prog=$('#prog');let ok=0,dup=0,fail=0;
+ const F=await askForm(list);if(!F)return;
+ sheetImport();const prog=$('#prog');let ok=0,dup=0,fail=0;const newIds=[];
  for(let i=0;i<list.length;i++){
-  const f=list[i];
+  const f=list[i],it=F.items[i];
   prog.innerHTML=`<div class="pb"><b style="width:${i/list.length*100}%"></b></div><small>Importando ${i+1} de ${list.length} · ${esc(f.name)}</small>`;
   if(S.videos.some(v=>v.name===f.name&&v.size===f.size)){dup++;continue}
   try{
-   const m=await makeMeta(f);const id=uid();
+   const m=IM.metas[i],id=uid();
    await dbPut('blobs',{id,blob:f});
-   const rec={id,name:f.name,title:f.name.replace(/\.[^.]+$/,'').replace(/[_]+/g,' ').trim()||f.name,size:f.size,type:f.type,added:Date.now(),duration:m.duration,thumb:m.thumb,folder:folder||'',pos:0,fav:false,later:false,done:false,last:0};
-   await dbPut('videos',rec);S.videos.push(rec);ok++;
+   const rec={id,name:f.name,title:it.title||baseTitle(f),desc:it.desc,size:f.size,type:f.type,added:Date.now(),duration:m.duration,thumb:it.thumb||m.thumb,w:m.w||0,h:m.h||0,folder:F.folder,pos:0,fav:F.fav,later:F.later,done:false,last:0};
+   await dbPut('videos',rec);S.videos.push(rec);newIds.push(id);ok++;
   }catch(e){console.error(e);fail++;if(e&&e.name==='QuotaExceededError'){toast('Sin espacio en el teléfono');break}}
  }
- const num=S.videos.filter(v=>/^\d+$/.test(v.title)).length;
- if(num)toast('Hay '+num+' con nombre numérico: ⋮ → Cambiar nombre, o impórtalos “Desde Archivos”');
+ if(F.list&&newIds.length){let l=S.lists.find(x=>x.name.toLowerCase()===F.list.toLowerCase());
+  if(!l){l={id:uid(),name:F.list,ids:[]};S.lists.push(l)}
+  l.ids.push(...newIds.filter(x=>!l.ids.includes(x)));await dbPut('lists',l)}
+ metaCache.clear();
  prog.innerHTML=`<div class="pb"><b style="width:100%"></b></div><small>Listo: ${ok} importados${dup?` · ${dup} repetidos`:''}${fail?` · ${fail} con error`:''}</small>`;
  render();setTimeout(closeSheet,1100);
 }
+/* ----- descargas ----- */
+const safeName=x=>(String(x||'').replace(/[\\/:*?"<>|\u0000-\u001f]/g,' ').replace(/\s+/g,' ').trim().replace(/[. ]+$/,'')||'video').slice(0,120);
+const extOf=v=>{const m=(v.name||'').match(/\.([A-Za-z0-9]{2,5})$/);if(m)return m[1].toLowerCase();return({'video/mp4':'mp4','video/webm':'webm','video/quicktime':'mov','video/x-matroska':'mkv','video/3gpp':'3gp'})[v.type]||'mp4'};
+function saveBlob(blob,name){const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),180000)}
+function fileNames(vs){const used=new Map();return vs.map(v=>{let base=safeName(v.title),ext=extOf(v),n=base+'.'+ext,i=1;while(used.has(n.toLowerCase())){i++;n=`${base} (${i}).${ext}`}used.set(n.toLowerCase(),1);return n})}
+async function downloadOne(id){const v=byId(id),r=await dbGet('blobs',id);if(!r){toast('No se encontró el archivo');return}saveBlob(r.blob,safeName(v.title)+'.'+extOf(v));toast('Descargando “'+v.title+'”')}
+const CRCT=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+async function crcOf(blob,onp){let c=0xFFFFFFFF;const CH=4194304;for(let o=0;o<blob.size;o+=CH){const b=new Uint8Array(await blob.slice(o,o+CH).arrayBuffer());for(let i=0;i<b.length;i++)c=CRCT[(c^b[i])&255]^(c>>>8);onp&&onp(Math.min(1,(o+CH)/blob.size))}return(c^0xFFFFFFFF)>>>0}
+async function buildZip(entries,onp){
+ const enc=new TextEncoder(),parts=[],central=[];let off=0,csize=0;
+ for(let i=0;i<entries.length;i++){
+  const e=entries[i],nb=enc.encode(e.name),crc=await crcOf(e.blob,p=>onp&&onp(i,p)),d0=new Date(e.date||Date.now());
+  const t=(d0.getHours()<<11)|(d0.getMinutes()<<5)|(d0.getSeconds()>>1),d=((d0.getFullYear()-1980)<<9)|((d0.getMonth()+1)<<5)|d0.getDate();
+  const lh=new DataView(new ArrayBuffer(30));lh.setUint32(0,0x04034b50,true);lh.setUint16(4,20,true);lh.setUint16(6,0x0800,true);lh.setUint16(8,0,true);lh.setUint16(10,t,true);lh.setUint16(12,d,true);lh.setUint32(14,crc,true);lh.setUint32(18,e.blob.size,true);lh.setUint32(22,e.blob.size,true);lh.setUint16(26,nb.length,true);lh.setUint16(28,0,true);
+  parts.push(lh.buffer,nb,e.blob);
+  const ch=new DataView(new ArrayBuffer(46));ch.setUint32(0,0x02014b50,true);ch.setUint16(4,20,true);ch.setUint16(6,20,true);ch.setUint16(8,0x0800,true);ch.setUint16(10,0,true);ch.setUint16(12,t,true);ch.setUint16(14,d,true);ch.setUint32(16,crc,true);ch.setUint32(20,e.blob.size,true);ch.setUint32(24,e.blob.size,true);ch.setUint16(28,nb.length,true);ch.setUint32(42,off,true);
+  central.push(ch.buffer,nb);csize+=46+nb.length;off+=30+nb.length+e.blob.size;
+ }
+ const end=new DataView(new ArrayBuffer(22));end.setUint32(0,0x06054b50,true);end.setUint16(8,entries.length,true);end.setUint16(10,entries.length,true);end.setUint32(12,csize,true);end.setUint32(16,off,true);
+ return new Blob([...parts,...central,end.buffer],{type:'application/zip'});
+}
+let DL=null;
+function sheetDownload(){
+ const vs=DL.ids.map(byId).filter(Boolean),tot=vs.reduce((a,v)=>a+v.size,0),big=tot>3.9e9;
+ openSheet(`<h2>Descargar “${esc(DL.name)}”</h2><p class="small" style="margin:0 0 12px">${vs.length} ${vs.length===1?'video':'videos'} · ${fsize(tot)}</p>`+
+  (big?'<p class="small">Pesa demasiado para un solo ZIP; se descargarán uno por uno.</p>':`<button class="opt" data-act="dlzip"><span>${ic('dl')}</span><span>Un solo archivo ZIP<br><span class="small">${esc(safeName(DL.name))}.zip con la carpeta “${esc(safeName(DL.name))}” y cada video con su nombre</span></span></button>`)+
+  `<button class="opt" data-act="dlsep"><span>${ic('dl')}</span><span>Uno por uno<br><span class="small">Varios archivos, cada uno con el nombre del video</span></span></button><div class="prog" id="dlp"></div>`);
+}
+async function doDownload(zip){
+ const vs=DL.ids.map(byId).filter(Boolean),names=fileNames(vs),p=$('#dlp');
+ try{
+  if(!zip){for(let i=0;i<vs.length;i++){p.innerHTML=`<div class="pb"><b style="width:${i/vs.length*100}%"></b></div><small>Descargando ${i+1} de ${vs.length}</small>`;const r=await dbGet('blobs',vs[i].id);if(r)saveBlob(r.blob,names[i]);await new Promise(r=>setTimeout(r,900))}
+   p.innerHTML='<small>Listo. Si el navegador pide permiso para varias descargas, acéptalo.</small>';return}
+  const folder=safeName(DL.name),entries=[];
+  for(let i=0;i<vs.length;i++){const r=await dbGet('blobs',vs[i].id);if(r)entries.push({name:folder+'/'+names[i],blob:r.blob,date:vs[i].added})}
+  const blob=await buildZip(entries,(i,f)=>{p.innerHTML=`<div class="pb"><b style="width:${(i+f)/entries.length*100}%"></b></div><small>Preparando ${i+1} de ${entries.length}…</small>`});
+  saveBlob(blob,folder+'.zip');p.innerHTML=`<div class="pb"><b style="width:100%"></b></div><small>Listo: ${esc(folder)}.zip</small>`;
+ }catch(e){console.error(e);p.innerHTML='<small>No se pudo preparar la descarga (¿poca memoria?). Prueba “Uno por uno”.</small>'}
+}
+let fotoTarget=null,editThumb=null;
+const fileIn3=$('#file3');
+fileIn3.addEventListener('change',async()=>{
+ const f=fileIn3.files[0];fileIn3.value='';if(!f||fotoTarget==null)return;
+ try{const d=await imgToThumb(f);
+  if(fotoTarget==='edit'){editThumb=d;const e=$('#et');if(e)e.innerHTML=`<img src="${d}" alt="">`}
+  else{const i=+fotoTarget;IM.thumbs[i]=d;const box=$('#ft'+i);if(box){const sp=box.querySelector('.dur');box.innerHTML=`<img src="${d}" alt="">`;sp&&box.appendChild(sp);box.classList.remove('vt')}}
+ }catch{toast('No se pudo leer esa imagen')}
+});
 [fileIn,fileIn2].forEach(f=>f.addEventListener('change',()=>{if(f.files.length)importFiles(f.files);f.value=''}));
 
 /* ---------- reproductor ---------- */
@@ -493,7 +624,10 @@ async function openVideo(id,queue){
  if(P.url)URL.revokeObjectURL(P.url);
  P.url=URL.createObjectURL(rec.blob);P.id=id;if(queue)P.queue=queue;else if(!P.queue.includes(id))P.queue=[id];
  vid.src=P.url;vid.playbackRate=LS.get('speed',1);
- vid.onloadedmetadata=()=>{if(!v.duration&&isFinite(vid.duration)){v.duration=vid.duration;dbPut('videos',v)}
+ player.classList.toggle('vertical',isVert(v));
+ vid.onloadedmetadata=()=>{let ch=false;if(!v.duration&&isFinite(vid.duration)){v.duration=vid.duration;ch=true}
+  if(vid.videoWidth&&(v.w!==vid.videoWidth||v.h!==vid.videoHeight)){v.w=vid.videoWidth;v.h=vid.videoHeight;ch=true;player.classList.toggle('vertical',isVert(v))}
+  if(ch)dbPut('videos',v);
   if((v.pos||0)>3&&v.pos<vid.duration-5&&!v.done)vid.currentTime=v.pos};
  v.last=Date.now();if(v.done){v.done=false;v.pos=0}dbPut('videos',v);
  vid.play().catch(()=>{});
@@ -507,7 +641,7 @@ function expand(){
  showCtl();
 }
 function minimize(){if(!P.id)return;player.classList.remove('full');player.classList.add('mini');hideCtl();if(document.fullscreenElement)document.exitFullscreen?.()}
-function closePlayer(){
+function closePlayer(){player.classList.remove('vertical');
  persistPos();vid.pause();vid.removeAttribute('src');vid.load();if(P.url){URL.revokeObjectURL(P.url);P.url=null}
  P.id=null;player.classList.remove('on','full','mini');
  if('mediaSession' in navigator){navigator.mediaSession.metadata=null;navigator.mediaSession.playbackState='none'}
@@ -517,10 +651,11 @@ function fillInfo(){
  const v=byId(P.id);if(!v)return;
  $('#ptop').textContent=v.title;$('#mtitle').textContent=v.title;
  const idx=P.queue.indexOf(v.id);const next=P.queue.slice(idx+1).map(byId).filter(Boolean).slice(0,12);
- $('#pbody').innerHTML=`<h1>${esc(v.title)}</h1><div class="sub">${fmt(v.duration)} · ${fsize(v.size)} · importado ${ago(v.added)}</div>
+ $('#pbody').innerHTML=`<h1>${esc(v.title)}</h1><div class="sub">${fmt(v.duration)} · ${fsize(v.size)} · importado ${ago(v.added)}${v.folder?` · 📁 ${esc(v.folder)}`:''}</div>${v.desc?`<p style="margin:0 0 12px;line-height:1.45">${esc(v.desc)}</p>`:''}
  <div class="acts"><button class="act ${v.fav?'on':''}" data-act="fav" data-id="${v.id}">${ic('heart')}Favorito</button>
  <button class="act ${v.later?'on':''}" data-act="later" data-id="${v.id}">${ic('clock')}Ver luego</button>
  <button class="act" data-act="addlist" data-id="${v.id}">${ic('save')}Guardar</button>
+ <button class="act" data-act="dl" data-id="${v.id}">${ic('dl')}Descargar</button>
  <button class="act" data-act="sheet-speed">${vid.playbackRate}× Velocidad</button></div>
  ${next.length?`<h2 class="sec" style="margin-top:6px">Siguientes</h2>`+next.map(n=>`<div class="q" data-act="play" data-id="${n.id}" data-keepq="1"><div class="th">${thumb(n)}<span class="dur">${fmt(n.duration)}</span></div><div class="tx"><h3>${esc(n.title)}</h3><p>${fsize(n.size)}</p></div></div>`).join(''):''}`;
 }
@@ -568,7 +703,7 @@ $('#bSpeed').onclick=()=>{const o=[1,1.25,1.5,1.75,2,0.75];const i=o.indexOf(vid
 $('#bFs').onclick=async()=>{
  const pv=$('#pv');
  if(document.fullscreenElement){document.exitFullscreen();return}
- try{if(pv.requestFullscreen){await pv.requestFullscreen();try{await screen.orientation?.lock?.('landscape')}catch{}}else if(vid.webkitEnterFullscreen)vid.webkitEnterFullscreen()}catch{if(vid.webkitEnterFullscreen)vid.webkitEnterFullscreen()}
+ try{if(pv.requestFullscreen){await pv.requestFullscreen();try{await screen.orientation?.lock?.(isVert(byId(P.id)||{})?'portrait':'landscape')}catch{}}else if(vid.webkitEnterFullscreen)vid.webkitEnterFullscreen()}catch{if(vid.webkitEnterFullscreen)vid.webkitEnterFullscreen()}
 };
 document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement){try{screen.orientation?.unlock?.()}catch{}}});
 let lastTap=0,tapT=0,lpOn=false,lpT=0,prevRate=1,sy=null;
@@ -623,6 +758,13 @@ document.addEventListener('click',async e=>{
   case'tab':S.tab=t.dataset.t;S.sub=null;render();scrollTo(0,0);break;
   case'import':sheetImport();break;
   case'pick':fileIn.click();break;
+  case'dl':closeSheet();downloadOne(id);break;
+  case'dlgroup':{const f=S.sub.startsWith('f:')?S.sub.slice(2):(S.lists.find(l=>l.id===S.sub)?.name||'Lista');DL={name:f,ids:[...S.ctx]};sheetDownload();break}
+  case'dlzip':doDownload(true);break;
+  case'dlsep':doDownload(false);break;
+  case'importgo':{const r=namesRes;namesRes=null;const F0=readForm(IM.metas.length);cleanSrc();r&&r(F0);break}
+  case'foto':fotoTarget=t.dataset.i;fileIn3.click();break;
+  case'efoto':fotoTarget='edit';fileIn3.click();break;
   case'pick2':fileIn2.click();break;
   case'chip':S.filter=t.dataset.k;render();break;
   case'sheet-sort':sheetSort();break;
@@ -642,7 +784,7 @@ document.addEventListener('click',async e=>{
   case'dellist':{const l=S.lists.find(x=>x.id===id);sheetConfirm(`¿Eliminar la lista “${esc(l.name)}”?`,'dodellist','Eliminar');sheet.dataset.l=id;break}
   case'dodellist':{const id2=sheet.dataset.l;await dbDel('lists',id2);S.lists=S.lists.filter(l=>l.id!==id2);S.sub=null;closeSheet();render();break}
   case'rename':sheetRename(id);break;
-  case'dorename':{const n=$('#rn').value.trim();if(!n)return;const v=byId(id);v.title=n;await saveVideo(v);closeSheet();if(P.id===id)fillInfo();render();break}
+  case'dorename':{const n=$('#rn').value.trim();if(!n)return;const v=byId(id);v.title=n;v.desc=$('#rd').value.trim();if(editThumb){v.thumb=editThumb;editThumb=null}await saveVideo(v);closeSheet();if(P.id===id)fillInfo();render();break}
   case'del':{const v=byId(id);sheetConfirm(`¿Eliminar “${esc(v.title)}”?`,'dodel','Eliminar');sheet.dataset.v=id;break}
   case'dodel':{const id2=sheet.dataset.v;await removeVideo(id2);closeSheet();toast('Video eliminado');render();break}
   case'wipe':sheetConfirm('¿Borrar toda la biblioteca?','dowipe','Borrar todo');break;
