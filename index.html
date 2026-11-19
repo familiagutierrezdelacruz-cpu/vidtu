@@ -36,12 +36,12 @@ header.top{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:
 header.top h1{font-size:23px;font-weight:800;letter-spacing:-.5px;flex:1;display:flex;align-items:center;gap:8px}
 .logo{width:34px;height:24px;border-radius:8px;background:linear-gradient(135deg,var(--accb),var(--acc2));display:grid;place-items:center;color:#fff}
 .logo svg{width:14px;height:14px}
-.ib{width:42px;height:42px;border-radius:50%;display:grid;place-items:center}
+.ib{width:44px;height:44px;border-radius:50%;display:grid;place-items:center}
 .ib:active{transform:scale(.92)}
 main{padding:0 14px calc(var(--tab) + var(--sb) + 110px)}
 .chips{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 12px;scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
-.chip{flex:none;padding:8px 15px;border-radius:99px;font-weight:600;font-size:13.5px;background:var(--glass);border:1px solid var(--stroke);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.chip{flex:none;min-height:44px;padding:8px 15px;border-radius:99px;font-weight:600;font-size:13.5px;background:var(--glass);border:1px solid var(--stroke);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
 .chip.on{background:var(--ink);color:var(--bg);border-color:transparent}
 h2.sec{font-size:18px;margin:6px 2px 10px;display:flex;align-items:center;justify-content:space-between}
 h2.sec small{font:500 13px 'Public Sans';color:var(--mute)}
@@ -59,7 +59,7 @@ h2.sec small{font:500 13px 'Public Sans';color:var(--mute)}
 .tx{flex:1;min-width:0}
 .tx h3{font-size:15.5px;font-weight:600;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-family:'Public Sans',sans-serif}
 .tx p{margin:3px 0 0;color:var(--mute);font-size:12.5px}
-.mo{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;flex:none}
+.mo{width:44px;height:44px;margin:-4px -4px -4px 0;border-radius:50%;display:grid;place-items:center;flex:none}
 .hrow{display:flex;gap:12px;overflow-x:auto;padding:2px 2px 14px;scrollbar-width:none;margin:0 -14px;padding-left:14px;padding-right:14px}
 .hrow::-webkit-scrollbar{display:none}
 .hcard{flex:none;width:200px;border-radius:20px;overflow:hidden;animation:rise .5s both;animation-delay:calc(var(--i,0)*50ms);cursor:pointer}
@@ -99,7 +99,7 @@ h2.sec small{font:500 13px 'Public Sans';color:var(--mute)}
 .sw.on{background:var(--accb)}.sw.on::after{left:23px}
 
 nav.tabs{position:fixed;left:10px;right:10px;bottom:calc(var(--sb) + 8px);height:var(--tab);border-radius:26px;display:flex;align-items:center;justify-content:space-around;z-index:30}
-nav.tabs button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10.5px;font-weight:600;color:var(--mute);transition:.2s}
+nav.tabs button{flex:1;align-self:stretch;min-height:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:10.5px;font-weight:600;color:var(--mute);transition:.2s}
 nav.tabs button.on{color:var(--acc)}
 nav.tabs button.on svg{transform:translateY(-1px) scale(1.1)}
 nav.tabs .plus{flex:none;width:56px;height:56px;border-radius:50%;margin-top:-26px;color:#fff;background:linear-gradient(135deg,var(--accb),var(--acc2));box-shadow:0 10px 26px rgba(212,22,60,.4);display:grid;place-items:center}
@@ -143,8 +143,8 @@ nav.tabs .plus:active{transform:scale(.92)}
 .cmid .big{width:68px;height:68px;background:rgba(255,255,255,.2);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
 .cmid .big svg{width:34px;height:34px}
 .cbot{display:flex;align-items:center;gap:8px;padding:0 10px 8px;font-size:12px;font-weight:600}
-.cbot button{min-width:36px;height:36px;display:grid;place-items:center;font-weight:700}
-#seek{flex:1;height:30px;-webkit-appearance:none;appearance:none;background:none;margin:0}
+.cbot button{min-width:44px;height:44px;display:grid;place-items:center;font-weight:700}
+#seek{flex:1;height:44px;-webkit-appearance:none;appearance:none;background:none;margin:0}
 #seek::-webkit-slider-runnable-track{height:4px;border-radius:9px;background:linear-gradient(90deg,var(--acc) var(--pct,0%),rgba(255,255,255,.35) var(--pct,0%))}
 #seek::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--acc);margin-top:-5.5px;box-shadow:0 0 0 4px rgba(255,59,92,.25)}
 #seek::-moz-range-track{height:4px;border-radius:9px;background:rgba(255,255,255,.35)}
@@ -157,7 +157,7 @@ nav.tabs .plus:active{transform:scale(.92)}
 .pbody{flex:1;overflow:auto;padding:14px 16px calc(var(--sb) + 20px);animation:rise .5s both}
 .pbody h1{font-size:20px;line-height:1.25;font-weight:800}
 .pbody .sub{color:var(--mute);font-size:13px;margin:5px 0 12px}
-.acts{display:flex;gap:8px;overflow-x:auto;padding-bottom:12px;scrollbar-width:none}
+.acts{display:flex;flex-wrap:wrap;gap:8px;padding-bottom:12px}
 .acts::-webkit-scrollbar{display:none}
 .act{flex:none;display:flex;align-items:center;gap:7px;padding:9px 15px;border-radius:99px;background:rgba(128,120,160,.16);font-weight:600;font-size:13.5px}
 .act.on{background:var(--accb);color:#fff}
@@ -234,9 +234,9 @@ input[type=range].fr{width:100%;accent-color:var(--accb);margin:4px 0 2px}
 <div class="back" id="back"></div>
 <div class="sheet glass" id="sheet"></div>
 <div class="toast" id="toast"></div>
-<input type="file" id="file" accept="video/*" multiple hidden>
-<input type="file" id="file3" accept="image/*" hidden>
-<input type="file" id="file2" accept=".mp4,.m4v,.mov,.mkv,.webm,.3gp,.avi" multiple hidden>
+<input type="file" id="file" accept="video/*" multiple hidden aria-label="Elegir videos">
+<input type="file" id="file3" accept="image/*" hidden aria-label="Elegir foto">
+<input type="file" id="file2" accept=".mp4,.m4v,.mov,.mkv,.webm,.3gp,.avi" multiple hidden aria-label="Elegir videos desde Archivos">
 
 <script>
 'use strict';
@@ -762,7 +762,10 @@ document.addEventListener('click',async e=>{
   case'dlgroup':{const f=S.sub.startsWith('f:')?S.sub.slice(2):(S.lists.find(l=>l.id===S.sub)?.name||'Lista');DL={name:f,ids:[...S.ctx]};sheetDownload();break}
   case'dlzip':doDownload(true);break;
   case'dlsep':doDownload(false);break;
-  case'importgo':{const r=namesRes;namesRes=null;const F0=readForm(IM.metas.length);cleanSrc();r&&r(F0);break}
+  case'importgo':{
+   if(!IM.warned){const bad=[...document.querySelectorAll('#sheet .nm')].filter((el,i)=>!el.value.trim()&&list_files_cache[i]&&isNum(list_files_cache[i]));
+    if(bad.length){IM.warned=true;bad.forEach(el=>el.style.borderColor='var(--acc)');bad[0].focus();toast('Escribe un título: el nombre del archivo son solo números. Toca Importar otra vez para dejarlo así.');break}}
+   const r=namesRes;namesRes=null;const F0=readForm(IM.metas.length);cleanSrc();r&&r(F0);break}
   case'foto':fotoTarget=t.dataset.i;fileIn3.click();break;
   case'efoto':fotoTarget='edit';fileIn3.click();break;
   case'pick2':fileIn2.click();break;
